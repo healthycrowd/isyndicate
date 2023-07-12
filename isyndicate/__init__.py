@@ -5,6 +5,7 @@ import feedparser
 import rssadd
 from fnum import FnumMetadata, FnumMax
 from imeta import ImageMetadata
+import sociallimits
 
 from .exceptions import SyndicateException
 
@@ -12,14 +13,26 @@ from .exceptions import SyndicateException
 __version__ = "0.1.0"
 
 
+class TagSettings:
+    def __init__(self, caption_limit=None, tag_limit=None, tag_element=None):
+        self.caption_limit = caption_limit
+        self.tag_limit = tag_limit
+        self.tag_element = tag_element
+
+
+for name, platform in sociallimits.all_platforms:
+    settings = TagSettings(platform.caption_limit, platform.tag_limit)
+    if name == "TUMBLR":
+        settings.tag_element = "title"
+    setattr(TagSettings, name, settings)
+
+
 def add_image(
     image_url,
     from_source=None,
     to_source=None,
     image_dir=None,
-    caption_limit=None,
-    tag_limit=None,
-    tag_element=None,
+    tag_settings=None,
 ):
     title = Path(image_url).stem
     # This should always be treated as a new item even if an image id has been reused
@@ -34,15 +47,24 @@ def add_image(
         for n, tag in enumerate(tags):
             addedtag = tagstr + ("" if n == 0 else " ")
             addedtag += f"#{tag}"
-            if caption_limit is not None and len(addedtag) > caption_limit:
+            if (
+                tag_settings
+                and tag_settings.caption_limit is not None
+                and len(addedtag) > tag_settings.caption_limit
+            ):
                 break
             tagstr = addedtag
-            if tag_limit is not None and n + 1 >= tag_limit:
+            if (
+                tag_settings
+                and tag_settings.tag_limit is not None
+                and n + 1 >= tag_settings.tag_limit
+            ):
                 break
     if tagstr == "":
         tagstr = " "
 
     addedtag = None
+    tag_element = tag_settings.tag_element if tag_settings else None
     if tag_element is None:
         tag_element = "description"
     if tag_element in ("guid", "link"):
@@ -108,11 +130,9 @@ def add_image_seq(
     from_source=None,
     to_source=None,
     image_dir=None,
-    max_id=None,
     suffix=None,
-    caption_limit=None,
-    tag_limit=None,
-    tag_element=None,
+    max_id=None,
+    tag_settings=None,
 ):
     last_id = _last_from_feed(from_source)
 
@@ -140,9 +160,7 @@ def add_image_seq(
         from_source,
         to_source,
         image_dir,
-        caption_limit,
-        tag_limit,
-        tag_element,
+        tag_settings,
     )
 
 
@@ -151,11 +169,9 @@ def add_image_random(
     from_source=None,
     to_source=None,
     image_dir=None,
-    max_id=None,
     suffix=None,
-    caption_limit=None,
-    tag_limit=None,
-    tag_element=None,
+    max_id=None,
+    tag_settings=None,
 ):
     last_id = _last_from_feed(from_source)
 
@@ -171,7 +187,5 @@ def add_image_random(
         from_source,
         to_source,
         image_dir,
-        caption_limit,
-        tag_limit,
-        tag_element,
+        tag_settings,
     )
