@@ -1,2 +1,2 @@
-class ScheduleException(Exception):
+class SyndicateException(Exception):
     pass
