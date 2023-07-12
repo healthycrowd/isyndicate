@@ -3,6 +3,7 @@ from pathlib import Path
 from random import randint
 import feedparser
 import rssadd
+from rssadd.source_type import SourceType
 from fnum import FnumMetadata, FnumMax
 from imeta import ImageMetadata
 import sociallimits
@@ -20,7 +21,7 @@ class TagSettings:
         self.tag_element = tag_element
 
 
-for name, platform in sociallimits.all_platforms:
+for name, platform in sociallimits.all_platforms.items():
     settings = TagSettings(platform.caption_limit, platform.tag_limit)
     if name == "TUMBLR":
         settings.tag_element = "title"
@@ -125,6 +126,22 @@ def _image_url_from_id(base_url, image_id, image_dir, suffix):
     return f"{base_url}{filename}"
 
 
+def _find_max(max_id, image_dir):
+    if max_id is not None:
+        return max_id
+    if image_dir is None:
+        return None
+    try:
+        metadata = FnumMetadata.from_file(image_dir)
+        max_id = metadata.max
+    except FileNotFoundError:
+        try:
+            max_id = FnumMax.from_file(image_dir).value
+        except FileNotFoundError:
+            pass
+    return max_id
+
+
 def add_image_seq(
     base_url,
     from_source=None,
@@ -138,16 +155,12 @@ def add_image_seq(
 
     image_id = 1 if last_id is None else last_id + 1
 
-    if not max_id and image_dir:
-        try:
-            metadata = FnumMetadata.from_file(image_dir)
-            max_id = metadata.max
-        except FileNotFoundError:
-            try:
-                max_id = FnumMax.from_file(image_dir).value
-            except FileNotFoundError:
-                pass
+    max_id = _find_max(max_id, image_dir)
     if max_id is not None and image_id >= max_id:
+        # Do nothing if we can
+        if SourceType.from_source(to_source) == SourceType.FILE:
+            return
+        # Avoid adding to the feed
         return rssadd.add_element(
             from_source=from_source,
             to_source=to_source,
@@ -173,6 +186,10 @@ def add_image_random(
     max_id=None,
     tag_settings=None,
 ):
+    max_id = _find_max(max_id, image_dir)
+    if max_id is None:
+        raise SyndicateException("Unable to determine max_id for random selection")
+
     last_id = _last_from_feed(from_source)
 
     image_id = randint(1, max_id)
