@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "isyndicate"
+description = "Updates an RSS feed with the next image from a set of numbered images"
+license = { text = "MIT" }
+authors = [{name = "Matt Wisniewski", email = "healthycrowd@mattw.life"}]
+keywords = ["isyndicate", "utility", "rss", "fnum", "image", "syndicate"]
+dynamic = ["version"]
+requires-python = ">=3.8.0"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "feedparser~=6.0",
+    "rssadd~=1.1",
+    "fnum~=1.5",
+    "imeta~=1.2",
+    "sociallimits~=0.1",
+]
+
+[project.urls]
+homepage = "https://github.com/healthycrowd/isyndicate"
