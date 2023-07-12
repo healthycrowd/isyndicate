@@ -1,0 +1,2 @@
+class ScheduleException(Exception):
+    pass
