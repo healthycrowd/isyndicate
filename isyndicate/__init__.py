@@ -12,22 +12,61 @@ from .exceptions import SyndicateException
 __version__ = "0.1.0"
 
 
-def add_image(image_url, from_source=None, to_source=None):
+def add_image(
+    image_url,
+    from_source=None,
+    to_source=None,
+    image_dir=None,
+    caption_limit=None,
+    tag_limit=None,
+    tag_element=None,
+):
     title = Path(image_url).stem
     # This should always be treated as a new item even if an image id has been reused
     guid = str(uuid.uuid4())
     link = image_url
     description = " "
 
+    tagstr = ""
+    if image_dir:
+        metadata = ImageMetadata.from_file(str(Path(image_dir) / Path(image_url).name))
+        tags = (tag for tag in metadata.tags if ":" not in tag)
+        for n, tag in enumerate(tags):
+            addedtag = tagstr + ("" if n == 0 else " ")
+            addedtag += f"#{tag}"
+            if caption_limit is not None and len(addedtag) > caption_limit:
+                break
+            tagstr = addedtag
+            if tag_limit is not None and n + 1 >= tag_limit:
+                break
+    if tagstr == "":
+        tagstr = " "
+
+    addedtag = None
+    if tag_element is None:
+        tag_element = "description"
+    if tag_element in ("guid", "link"):
+        raise SyndicateException(f"Tags cannot be in {tag_element} element")
+    if tag_element == "title":
+        title = tagstr
+    elif tag_element == "description":
+        description = tagstr
+    else:
+        addedtag = f"<{tag_element}>{tagstr}</{tag_element}>"
+
+    tags = [
+        f"<title>{title}</title>",
+        f"<guid>{guid}</guid>",
+        f"<link>{link}</link>",
+        f"<description>{description}</description>",
+    ]
+    if addedtag:
+        tags.append(addedtag)
+
     return rssadd.add_item(
         from_source=from_source,
         to_source=to_source,
-        tags=[
-            f"<title>{title}</title>",
-            f"<guid>{guid}</guid>",
-            f"<link>{link}</link>",
-            f"<description>{description}</description>",
-        ],
+        tags=tags,
         max_items=10,
     )
 
@@ -65,7 +104,15 @@ def _image_url_from_id(base_url, image_id, image_dir, suffix):
 
 
 def add_image_seq(
-    base_url, from_source=None, to_source=None, image_dir=None, max_id=None, suffix=None
+    base_url,
+    from_source=None,
+    to_source=None,
+    image_dir=None,
+    max_id=None,
+    suffix=None,
+    caption_limit=None,
+    tag_limit=None,
+    tag_element=None,
 ):
     last_id = _last_from_feed(from_source)
 
@@ -88,11 +135,27 @@ def add_image_seq(
         )
 
     image_url = _image_url_from_id(base_url, image_id, image_dir, suffix)
-    return schedule(image_url, from_source, to_source)
+    return schedule(
+        image_url,
+        from_source,
+        to_source,
+        image_dir,
+        caption_limit,
+        tag_limit,
+        tag_element,
+    )
 
 
 def add_image_random(
-    base_url, from_source=None, to_source=None, image_dir=None, max_id=None, suffix=None
+    base_url,
+    from_source=None,
+    to_source=None,
+    image_dir=None,
+    max_id=None,
+    suffix=None,
+    caption_limit=None,
+    tag_limit=None,
+    tag_element=None,
 ):
     last_id = _last_from_feed(from_source)
 
@@ -103,4 +166,12 @@ def add_image_random(
         image_id = max_id
 
     image_url = _image_url_from_id(base_url, image_id, image_dir, suffix)
-    return schedule(image_url, from_source, to_source)
+    return schedule(
+        image_url,
+        from_source,
+        to_source,
+        image_dir,
+        caption_limit,
+        tag_limit,
+        tag_element,
+    )
