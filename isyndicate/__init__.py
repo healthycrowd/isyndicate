@@ -11,7 +11,7 @@ import sociallimits
 from .exceptions import SyndicateException
 
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 
 class TagSettings:

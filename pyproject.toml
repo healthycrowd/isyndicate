@@ -29,7 +29,7 @@ dependencies = [
     "rssadd~=1.1",
     "fnum~=1.5",
     "imeta~=1.2",
-    "sociallimits~=0.1",
+    "sociallimits~=1.0",
 ]
 
 [project.urls]
