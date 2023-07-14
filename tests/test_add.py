@@ -318,32 +318,269 @@ def test_add_seq_fail_no_suffix():
 
 
 def test_add_random_success_with_max():
-    pass
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    frompath.write_bytes(add_image("/5.jpg"))
+    feed = add_image_random(
+        BASE_URL, from_source=str(frompath), suffix=".jpg", max_id=5
+    )
+    items = feedparser.parse(feed)["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "5"
+    item = items[0]
+    assert int(item["title"]) <= 4
 
 
-def test_add_random_success_with_dir():
-    pass
+def test_add_random_success_with_dir_meta():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    frompath.write_bytes(add_image("/5.jpg"))
+    metadata = FnumMetadata({})
+    metadata.max = 5
+    metadata.to_file(tempdir.name)
+    for n in range(1, 6):
+        (Path(tempdir.name) / f"{n}.jpg").write_text("")
+        ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [],
+            }
+        ).to_image(str(Path(tempdir.name) / f"{n}.jpg"))
+    feed = add_image_random(
+        BASE_URL, from_source=str(frompath), suffix=".jpg", image_dir=tempdir.name
+    )
+    items = feedparser.parse(feed)["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "5"
+    item = items[0]
+    assert int(item["title"]) <= 4
+
+
+def test_add_random_success_with_dir_max():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    frompath.write_bytes(add_image("/5.jpg"))
+    metadata = FnumMax(5)
+    metadata.to_file(tempdir.name)
+    for n in range(1, 6):
+        (Path(tempdir.name) / f"{n}.jpg").write_text("")
+        ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [],
+            }
+        ).to_image(str(Path(tempdir.name) / f"{n}.jpg"))
+    feed = add_image_random(
+        BASE_URL, from_source=str(frompath), suffix=".jpg", image_dir=tempdir.name
+    )
+    items = feedparser.parse(feed)["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "5"
+    item = items[0]
+    assert int(item["title"]) <= 4
 
 
 def test_add_random_success_max_and_dir():
-    pass
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    frompath.write_bytes(add_image("/1.jpg"))
+    metadata = FnumMetadata({})
+    metadata.max = 1
+    metadata.to_file(tempdir.name)
+    for n in range(1, 6):
+        (Path(tempdir.name) / f"{n}.jpg").write_text("")
+        ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [],
+            }
+        ).to_image(str(Path(tempdir.name) / f"{n}.jpg"))
+    feed = add_image_random(
+        BASE_URL,
+        from_source=str(frompath),
+        suffix=".jpg",
+        image_dir=tempdir.name,
+        max_id=5,
+    )
+    items = feedparser.parse(feed)["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "1"
+    item = items[0]
+    assert int(item["title"]) <= 5 and item["title"] != "1"
+
+
+def test_add_random_success_suffix():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    topath = Path(tempdir.name) / "to"
+    frompath.write_bytes(add_image("/1.jpg"))
+    add_image_random(
+        BASE_URL,
+        from_source=str(frompath),
+        to_source=str(topath),
+        suffix=".jpg",
+        max_id=5,
+    )
+    items = feedparser.parse(topath.read_text())["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "1"
+    item = items[0]
+    assert int(item["title"]) <= 5 and item["title"] != "1"
+
+
+def test_add_random_success_image_dir():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    topath = Path(tempdir.name) / "to"
+    frompath.write_bytes(add_image("/1.jpg"))
+    for n in range(2, 6):
+        (Path(tempdir.name) / f"{n}.jpg").write_text("")
+        metadata = ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [],
+            }
+        )
+        metadata.to_image(str(Path(tempdir.name) / f"{n}.jpg"))
+    metadata = FnumMetadata({})
+    metadata.order = ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"]
+    metadata.to_file(tempdir.name)
+    add_image_random(
+        BASE_URL,
+        from_source=str(frompath),
+        to_source=str(topath),
+        image_dir=tempdir.name,
+        max_id=5,
+    )
+    items = feedparser.parse(topath.read_text())["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "1"
+    item = items[0]
+    assert int(item["title"]) <= 5 and item["title"] != "1"
+
+
+def test_add_random_success_suffix_and_dir():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    topath = Path(tempdir.name) / "to"
+    frompath.write_bytes(add_image("/1.jpg"))
+    for n in range(2, 6):
+        (Path(tempdir.name) / f"{n}.png").write_text("")
+        metadata = ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [],
+            }
+        )
+        metadata.to_image(str(Path(tempdir.name) / f"{n}.png"))
+    metadata = FnumMetadata({})
+    metadata.order = ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"]
+    metadata.to_file(tempdir.name)
+    add_image_random(
+        BASE_URL,
+        from_source=str(frompath),
+        to_source=str(topath),
+        image_dir=tempdir.name,
+        suffix=".png",
+        max_id=5,
+    )
+    items = feedparser.parse(topath.read_text())["items"]
+
+    assert len(items) == 2, items
+    assert items[1]["title"] == "1"
+    item = items[0]
+    assert int(item["title"]) <= 5 and item["title"] != "1"
+    assert item["link"] == f"{BASE_URL}{item['title']}.png"
 
 
 def test_add_random_fail_no_suffix():
-    pass
+    with pytest.raises(SyndicateException):
+        add_image_random(BASE_URL, max_id=5)
 
 
 def test_add_random_fail_no_max():
-    pass
+    with pytest.raises(SyndicateException):
+        add_image_random(BASE_URL, suffix=".jpg")
 
 
 def test_add_random_success_new_feed():
-    pass
+    feed = add_image_random(BASE_URL, suffix=".jpg", max_id=5)
+    items = feedparser.parse(feed)["items"]
+
+    assert len(items) == 1, items
+    item = items[0]
+    assert int(item["title"]) <= 5
+
+
+def test_add_random_success_max_two():
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    topath = Path(tempdir.name) / "to"
+    frompath.write_bytes(add_image("/1.jpg"))
+    feed = add_image_random(
+        BASE_URL,
+        suffix=".jpg",
+        max_id=2,
+        from_source=str(frompath),
+        to_source=str(topath),
+    )
+    items = feedparser.parse(topath.read_text())["items"]
+
+    assert len(items) == 2, items
+    assert items[0]["title"] == "2"
+    assert items[1]["title"] == "1"
 
 
 def test_add_random_success_max_one():
-    pass
+    tempdir = TemporaryDirectory()
+    frompath = Path(tempdir.name) / "from"
+    topath = Path(tempdir.name) / "to"
+    frompath.write_bytes(add_image("/1.jpg"))
+    feed = add_image_random(
+        BASE_URL,
+        suffix=".jpg",
+        max_id=1,
+        from_source=str(frompath),
+        to_source=str(topath),
+    )
+    items = feedparser.parse(topath.read_text())["items"]
+
+    assert len(items) == 2, items
+    assert items[0]["title"] == "1"
+    assert items[1]["title"] == "1"
 
 
 def test_add_random_success_tag_settings():
-    pass
+    tempdir = TemporaryDirectory()
+    for n in range(1, 6):
+        (Path(tempdir.name) / f"{n}.jpg").write_text("")
+        metadata = ImageMetadata(
+            {
+                "$version": "1.0",
+                "tags": [f"test{n}" for n in range(50)]
+                + ["meta:tagged", "source:pinterest"],
+            }
+        )
+        metadata.to_image(str(Path(tempdir.name) / f"{n}.jpg"))
+
+    feed = add_image_random(
+        BASE_URL,
+        suffix=".jpg",
+        tag_settings=TagSettings(tag_limit=10),
+        image_dir=tempdir.name,
+        max_id=5,
+    )
+    items = feedparser.parse(feed)["items"]
+    assert len(items) == 1, items
+    item = items[0]
+    assert int(item["title"]) <= 5
+    assert item["guid"]
+    assert item["link"] == f"{BASE_URL}{item['title']}.jpg"
+    assert item["published"]
+    assert item["description"] == " ".join(f"#test{n}" for n in range(10))

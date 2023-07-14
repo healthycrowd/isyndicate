@@ -122,8 +122,11 @@ def _image_url_from_id(base_url, image_id, image_dir, suffix):
         return f"{base_url}{image_id}{suffix}"
 
     metadata = FnumMetadata.from_file(image_dir)
-    filename = next(name for name in metadata.order if name.startswith(f"{image_id}."))
-    if not filename:
+    try:
+        filename = next(
+            name for name in metadata.order if name.startswith(f"{image_id}.")
+        )
+    except StopIteration:
         raise SyndicateException("Unable to determine image suffix")
     return f"{base_url}{filename}"
 
