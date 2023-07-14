@@ -43,7 +43,7 @@ def add_image(
 
     tagstr = ""
     if image_dir:
-        metadata = ImageMetadata.from_file(str(Path(image_dir) / Path(image_url).name))
+        metadata = ImageMetadata.from_image(str(Path(image_dir) / Path(image_url).name))
         tags = (tag for tag in metadata.tags if ":" not in tag)
         for n, tag in enumerate(tags):
             addedtag = tagstr + ("" if n == 0 else " ")
