@@ -95,6 +95,8 @@ def add_image(
 
 
 def _last_from_feed(feed):
+    if feed is None:
+        return None
     parsed_feed = feedparser.parse(feed)
     try:
         if parsed_feed.status < 200 or parsed_feed.status > 299:
@@ -158,7 +160,7 @@ def add_image_seq(
     max_id = _find_max(max_id, image_dir)
     if max_id is not None and image_id >= max_id:
         # Do nothing if we can
-        if SourceType.from_source(to_source) == SourceType.FILE:
+        if SourceType.to_source(to_source) == SourceType.FILE:
             return
         # Avoid adding to the feed
         return rssadd.add_element(
@@ -168,7 +170,7 @@ def add_image_seq(
         )
 
     image_url = _image_url_from_id(base_url, image_id, image_dir, suffix)
-    return schedule(
+    return add_image(
         image_url,
         from_source,
         to_source,
@@ -199,7 +201,7 @@ def add_image_random(
         image_id = max_id
 
     image_url = _image_url_from_id(base_url, image_id, image_dir, suffix)
-    return schedule(
+    return add_image(
         image_url,
         from_source,
         to_source,
